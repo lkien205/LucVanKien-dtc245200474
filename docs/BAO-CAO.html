@@ -69,7 +69,7 @@ pre { white-space: pre-wrap; overflow-wrap: anywhere; background: #f2f4f7; borde
     <li>Áp dụng network isolation, non-root, least privilege, read-only filesystem và security headers.</li>
   </ol>
   <h3>Phạm vi và giả định</h3>
-  <p>Đây là bản minh họa học tập, phục vụ một nhóm nhỏ và một host Docker. Tài khoản quản trị ban đầu được tạo từ biến môi trường; đăng ký mở tắt mặc định. Ba ca mẫu được nạp khi MySQL tạo volume lần đầu. Múi giờ nghiệp vụ là Asia/Ho_Chi_Minh. Bản mẫu chưa thay thế quy trình nhân sự chính thức, chưa có phê duyệt nghỉ phép, chấm công đa địa điểm hoặc tích hợp máy chấm công.</p>
+  <p>Đây là bản minh họa học tập, phục vụ một nhóm nhỏ và một host Docker. Tài khoản quản trị được đồng bộ theo biến môi trường khi ứng dụng khởi động; khi đổi APP_ADMIN_EMAIL hoặc APP_ADMIN_PASSWORD cần tạo lại container app. Đăng ký mở tắt mặc định. Ba ca mẫu được nạp khi MySQL tạo volume lần đầu. Múi giờ nghiệp vụ là Asia/Ho_Chi_Minh. Bản mẫu chưa thay thế quy trình nhân sự chính thức, chưa có phê duyệt nghỉ phép, chấm công đa địa điểm hoặc tích hợp máy chấm công.</p>
   <h3>Công nghệ sử dụng</h3>
   <p>PHP/PDO, MySQL, phpMyAdmin, Apache trong container ứng dụng, Nginx, Prometheus, Grafana, Loki, Promtail và cAdvisor cùng các exporter cho MySQL/Nginx.</p>
   <span class="page-no">2</span>

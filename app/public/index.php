@@ -44,14 +44,30 @@ function seedAdministrator(PDO $pdo): void
     $password = envValue('APP_ADMIN_PASSWORD');
 
     if (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($password) < 12) {
-        throw new RuntimeException('Admin email must be valid and admin password must be at least 12 characters.');
+        throw new InvalidArgumentException('Cấu hình quản trị không hợp lệ: email phải đúng định dạng và mật khẩu phải có ít nhất 12 ký tự.');
     }
 
-    $query = $pdo->prepare('SELECT id FROM employees WHERE email = ?');
-    $query->execute([$email]);
-    if ($query->fetch() === false) {
+    $admin = $pdo->query('SELECT id, name, email, password_hash FROM employees ORDER BY id ASC LIMIT 1')->fetch();
+    if ($admin === false) {
         $insert = $pdo->prepare('INSERT INTO employees (name, email, password_hash) VALUES (?, ?, ?)');
         $insert->execute([$name, $email, password_hash($password, PASSWORD_DEFAULT)]);
+        return;
+    }
+
+    $emailQuery = $pdo->prepare('SELECT id FROM employees WHERE email = ?');
+    $emailQuery->execute([$email]);
+    $emailOwner = $emailQuery->fetchColumn();
+    if ($emailOwner !== false && (int) $emailOwner !== (int) $admin['id']) {
+        throw new RuntimeException('APP_ADMIN_EMAIL is already assigned to another employee.');
+    }
+
+    if (
+        $admin['email'] !== $email
+        || $admin['name'] !== $name
+        || !password_verify($password, $admin['password_hash'])
+    ) {
+        $update = $pdo->prepare('UPDATE employees SET name = ?, email = ?, password_hash = ? WHERE id = ?');
+        $update->execute([$name, $email, password_hash($password, PASSWORD_DEFAULT), $admin['id']]);
     }
 }
 
@@ -78,6 +94,12 @@ function verifyCsrf(): void
 try {
     $pdo = database();
     seedAdministrator($pdo);
+} catch (InvalidArgumentException $exception) {
+    error_log((string) $exception);
+    http_response_code(503);
+    header('Content-Type: text/plain; charset=utf-8');
+    echo $exception->getMessage() . "\n";
+    exit;
 } catch (Throwable $exception) {
     error_log((string) $exception);
     http_response_code(503);
@@ -250,7 +272,7 @@ if ($employeeId !== null) {
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Điểm danh nhân viên</title>
     <style>
-        :root { color-scheme: light; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; color: #172033; background: #f3f6fb; }
+        :root { color-scheme: light; font-family: "Segoe UI", Tahoma, Arial, sans-serif; color: #172033; background: #f3f6fb; }
         * { box-sizing: border-box; }
         body { margin: 0; }
         header { background: #173b70; color: white; padding: 1rem max(1rem, calc((100vw - 960px) / 2)); display: flex; justify-content: space-between; align-items: center; gap: 1rem; }

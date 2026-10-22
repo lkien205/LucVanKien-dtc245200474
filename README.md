@@ -7,7 +7,7 @@
 1. Cài Docker Engine/Desktop và Docker Compose plugin.
 2. Sao chép `.env.example` thành `.env`; thay các giá trị mật khẩu bằng chuỗi ngẫu nhiên riêng biệt. Mật khẩu quản trị ứng dụng phải có ít nhất 12 ký tự. Không commit `.env`.
 3. Chạy `docker compose up -d --build`.
-4. Mở ứng dụng tại `http://localhost:18270`. Tài khoản quản trị mặc định được tạo từ `APP_ADMIN_EMAIL` và `APP_ADMIN_PASSWORD` trong `.env`; có thể dùng tính năng tạo tài khoản để thêm nhân viên.
+4. Mở ứng dụng tại `http://localhost:18270`. Tài khoản quản trị được đồng bộ từ `APP_ADMIN_EMAIL` và `APP_ADMIN_PASSWORD` trong `.env`; tài khoản đầu tiên trong cơ sở dữ liệu được dùng làm tài khoản quản trị. Để đổi email hoặc mật khẩu quản trị, sửa `.env`, sau đó chạy `docker compose up -d --build --force-recreate app` để áp dụng biến môi trường mới.
 
 phpMyAdmin ở `http://localhost:18271`, Prometheus ở `http://localhost:19027`, Grafana ở `http://localhost:13027`. Các cổng này và cổng ứng dụng chỉ bind vào loopback của máy chủ. Các cổng dùng dải riêng để tránh xung đột với dịch vụ chạy sẵn trên máy. Grafana dùng mật khẩu `GRAFANA_ADMIN_PASSWORD` trong `.env`.
 
@@ -16,10 +16,11 @@ phpMyAdmin ở `http://localhost:18271`, Prometheus ở `http://localhost:19027`
 ## Tính năng và quy tắc
 
 - Ba ca mẫu được nạp lần đầu: sáng, chiều, tối. Có thể sửa/dùng thêm ca qua phpMyAdmin.
+- MySQL seed và kết nối ứng dụng dùng `utf8mb4` để lưu/hiển thị tên tiếng Việt chính xác.
 - Mỗi nhân viên chỉ có một bản ghi cho mỗi ca/ngày. Cơ sở dữ liệu chặn điểm danh trùng; chỉ có thể điểm danh ra sau khi điểm danh vào.
 - Lịch sử chỉ hiển thị dữ liệu của tài khoản đang đăng nhập.
 - Đăng ký yêu cầu email hợp lệ và mật khẩu tối thiểu 12 ký tự.
-- Tài khoản quản trị được khởi tạo ở lần truy cập đầu tiên. Đổi các biến `APP_ADMIN_*` sau khi tài khoản đã tạo không tự đổi hồ sơ/mật khẩu hiện có.
+- Tài khoản đầu tiên được tạo là tài khoản quản trị; mỗi lần khởi động ứng dụng, thông tin tài khoản này được đồng bộ theo các biến `APP_ADMIN_*`. Tài khoản nhân viên đăng ký sau đó không bị thay đổi.
 - Đăng ký tài khoản tắt mặc định (`APP_SIGNUP_ENABLED=false`). Bật tạm thời trong `.env` để nhân viên tạo tài khoản, sau đó tắt lại.
 
 ## Quan sát hệ thống
@@ -34,7 +35,7 @@ phpMyAdmin ở `http://localhost:18271`, Prometheus ở `http://localhost:19027`
 
 ## Báo cáo
 
-Mẫu báo cáo tối thiểu 10 trang nằm ở [`docs/BAO-CAO.html`](docs/BAO-CAO.html). Mở bằng trình duyệt và in/lưu thành PDF; trước khi nộp, thay thông tin sinh viên và URL repository, đồng thời bổ sung ảnh dashboard Grafana đã đăng nhập cùng các minh chứng demo của bạn.
+Báo cáo Word nằm ở [`docs/BAO-CAO.docx`](docs/BAO-CAO.docx); [`docs/BAO-CAO.html`](docs/BAO-CAO.html) là bản nguồn. Trước khi nộp, bổ sung tên học phần, tỉnh/thành phố, URL repository, ảnh dashboard Grafana sau khi đăng nhập và các minh chứng demo còn thiếu.
 
 ## Hardening đã áp dụng
 
