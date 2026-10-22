@@ -1,0 +1,292 @@
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:?Copy .env.example to .env and set MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER:?Set MYSQL_USER in .env}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in .env}
+      MYSQL_METRICS_PASSWORD: ${MYSQL_METRICS_PASSWORD:?Set MYSQL_METRICS_PASSWORD in .env}
+      TZ: Asia/Ho_Chi_Minh
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./database/init.sql:/docker-entrypoint-initdb.d/001-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p\"$${MYSQL_ROOT_PASSWORD}\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - backend
+    security_opt:
+      - no-new-privileges:true
+
+  mysql-exporter-config:
+    image: mysql:8.4
+    restart: "no"
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        umask 077;
+        printf '[client]\nuser=attendance_metrics\npassword=%s\n' "$$MYSQL_METRICS_PASSWORD" > /run/mysql-exporter/.my.cnf;
+        chmod 0444 /run/mysql-exporter/.my.cnf
+    environment:
+      MYSQL_METRICS_PASSWORD: ${MYSQL_METRICS_PASSWORD:?Set MYSQL_METRICS_PASSWORD in .env}
+    volumes:
+      - mysql-exporter-config:/run/mysql-exporter
+    depends_on:
+      mysql-metrics-init:
+        condition: service_completed_successfully
+    networks:
+      - backend
+    security_opt:
+      - no-new-privileges:true
+
+  app:
+    build: ./app
+    restart: unless-stopped
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: ${MYSQL_DATABASE:?Set MYSQL_DATABASE in .env}
+      DB_USER: ${MYSQL_USER:?Set MYSQL_USER in .env}
+      DB_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env}
+      APP_ADMIN_EMAIL: ${APP_ADMIN_EMAIL:?Set APP_ADMIN_EMAIL in .env}
+      APP_ADMIN_NAME: ${APP_ADMIN_NAME:-Attendance Admin}
+      APP_ADMIN_PASSWORD: ${APP_ADMIN_PASSWORD:?Set APP_ADMIN_PASSWORD in .env}
+      APP_SIGNUP_ENABLED: ${APP_SIGNUP_ENABLED:-false}
+      APP_COOKIE_SECURE: ${APP_COOKIE_SECURE:-0}
+      TZ: Asia/Ho_Chi_Minh
+    expose:
+      - "8080"
+    user: "33:33"
+    volumes:
+      - app-logs:/var/log/app
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - backend
+      - monitoring
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/run/apache2:uid=33,gid=33,mode=755
+      - /var/lock/apache2:uid=33,gid=33,mode=755
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:18270:8080"
+    user: "33:33"
+    entrypoint: ["nginx", "-g", "daemon off;"]
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - app-logs:/var/log/app
+    depends_on:
+      - app
+    networks:
+      - frontend
+      - backend
+      - monitoring
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx:uid=33,gid=33,mode=755
+      - /var/run:uid=33,gid=33,mode=755
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+  phpmyadmin:
+    image: phpmyadmin:5-apache
+    restart: unless-stopped
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      UPLOAD_LIMIT: 16M
+    ports:
+      - "127.0.0.1:18271:80"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - frontend
+      - backend
+    security_opt:
+      - no-new-privileges:true
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.enable-lifecycle
+    ports:
+      - "127.0.0.1:19027:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    depends_on:
+      - nginx
+      - mysql-exporter
+      - nginx-exporter
+      - cadvisor
+    networks:
+      - frontend
+      - monitoring
+    security_opt:
+      - no-new-privileges:true
+
+  mysql-exporter:
+    image: prom/mysqld-exporter:v0.17.2
+    restart: unless-stopped
+    command:
+      - --config.my-cnf=/run/mysql-exporter/.my.cnf
+      - --mysqld.address=mysql:3306
+      - --mysqld.username=attendance_metrics
+    volumes:
+      - mysql-exporter-config:/run/mysql-exporter:ro
+    expose:
+      - "9104"
+    depends_on:
+      mysql-metrics-init:
+        condition: service_completed_successfully
+    networks:
+      - backend
+      - monitoring
+    security_opt:
+      - no-new-privileges:true
+
+  mysql-metrics-init:
+    image: mysql:8.4
+    restart: "no"
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        MYSQL_PWD=$$MYSQL_ROOT_PASSWORD mysql --protocol=tcp -hmysql -uroot
+        -e "CREATE USER IF NOT EXISTS 'attendance_metrics'@'%' IDENTIFIED BY '$$MYSQL_METRICS_PASSWORD';
+        GRANT PROCESS, REPLICATION CLIENT, SELECT ON *.* TO 'attendance_metrics'@'%';"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in .env}
+      MYSQL_METRICS_PASSWORD: ${MYSQL_METRICS_PASSWORD:?Set MYSQL_METRICS_PASSWORD in .env}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - backend
+    security_opt:
+      - no-new-privileges:true
+
+  nginx-exporter:
+    image: nginx/nginx-prometheus-exporter:1.4.2
+    restart: unless-stopped
+    command:
+      - --nginx.scrape-uri=http://nginx:8080/nginx_status
+    expose:
+      - "9113"
+    depends_on:
+      - nginx
+    networks:
+      - monitoring
+    security_opt:
+      - no-new-privileges:true
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.52.1
+    restart: unless-stopped
+    command:
+      - --docker_only=true
+      - --housekeeping_interval=30s
+    expose:
+      - "8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /dev/disk:/dev/disk:ro
+    networks:
+      - monitoring
+    security_opt:
+      - no-new-privileges:true
+
+  loki:
+    image: grafana/loki:3.5.7
+    restart: unless-stopped
+    command: -config.file=/etc/loki/config.yml
+    volumes:
+      - ./loki/config.yml:/etc/loki/config.yml:ro
+      - loki-data:/loki
+    networks:
+      - monitoring
+    security_opt:
+      - no-new-privileges:true
+
+  promtail:
+    image: grafana/promtail:3.5.7
+    restart: unless-stopped
+    command: -config.file=/etc/promtail/config.yml
+    volumes:
+      - ./promtail/config.yml:/etc/promtail/config.yml:ro
+      - app-logs:/var/log/app:ro
+      - promtail-positions:/tmp
+    depends_on:
+      - loki
+      - nginx
+    networks:
+      - monitoring
+    security_opt:
+      - no-new-privileges:true
+
+  grafana:
+    image: grafana/grafana:12.1.0
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Set GRAFANA_ADMIN_PASSWORD in .env}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_PLUGINS_PREINSTALL_DISABLED: "true"
+    ports:
+      - "127.0.0.1:13027:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+      - loki
+    networks:
+      - frontend
+      - monitoring
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  mysql-data:
+  app-logs:
+  prometheus-data:
+  loki-data:
+  grafana-data:
+  promtail-positions:
+  mysql-exporter-config:
+
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    internal: true
+  monitoring:
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
