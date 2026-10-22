@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Báo cáo Đề 27 - Hệ thống điểm danh</title>
+<style>
+@page { size: A4; margin: 0; }
+* { box-sizing: border-box; }
+body { margin: 0; color: #1d2939; font: 12pt/1.45 "Times New Roman", serif; }
+.page { width: 210mm; min-height: 297mm; padding: 19mm 22mm 18mm; position: relative; page-break-after: always; break-after: page; }
+.page:last-child { page-break-after: auto; break-after: auto; }
+h1, h2, h3 { color: #173b70; margin: 0 0 8pt; }
+h1 { font-size: 22pt; text-align: center; }
+h2 { font-size: 17pt; border-bottom: 1px solid #b9c7da; padding-bottom: 5pt; }
+h3 { font-size: 13pt; margin-top: 12pt; }
+p { margin: 6pt 0; text-align: justify; }
+ul, ol { margin: 5pt 0 8pt 20pt; }
+li { margin: 3pt 0; }
+.center { text-align: center; }
+.cover { display: flex; flex-direction: column; justify-content: space-between; text-align: center; }
+.cover h1 { font-size: 25pt; margin-top: 20mm; }
+.cover .school { font-size: 17pt; font-weight: bold; }
+.cover .topic { font-size: 23pt; font-weight: bold; margin: 25mm 0; }
+.cover .student { width: 78%; margin: 0 auto; text-align: left; line-height: 2; }
+.muted { color: #526174; }
+.figure { margin: 10pt auto; text-align: center; }
+.figure img { max-width: 100%; max-height: 115mm; object-fit: contain; border: 1px solid #d5dce6; }
+.caption { font-size: 10pt; color: #475467; text-align: center; margin-top: 3pt; }
+.diagram { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8pt; margin: 15pt 0; text-align: center; }
+.box { border: 1px solid #6e8db8; border-radius: 6px; padding: 9pt; background: #f4f7fb; font-weight: bold; }
+.flow { color: #173b70; font-weight: bold; }
+table { width: 100%; border-collapse: collapse; margin: 8pt 0; font-size: 10.5pt; }
+th, td { border: 1px solid #aab7c8; padding: 5pt; text-align: left; vertical-align: top; }
+th { background: #eaf0f8; }
+pre { white-space: pre-wrap; overflow-wrap: anywhere; background: #f2f4f7; border: 1px solid #d0d5dd; padding: 8pt; font: 9.5pt/1.35 Consolas, monospace; }
+.page-no { position: absolute; bottom: 8mm; right: 22mm; font-size: 10pt; color: #667085; }
+@media screen { body { background: #e5eaf0; } .page { background: white; margin: 12mm auto; box-shadow: 0 2px 10px #0002; } }
+</style>
+</head>
+<body>
+<section class="page cover">
+  <div>
+    <div class="school">Trường Đại học Công nghệ Thông tin và Truyền thông<br>Khoa Công nghệ Thông tin</div>
+    <p class="center">[[TÊN HỌC PHẦN]]</p>
+    <h1>BÁO CÁO ĐỒ ÁN</h1>
+    <div class="topic">ĐỀ 27<br>HỆ THỐNG ĐIỂM DANH</div>
+    <p class="center">Website điểm danh nhân viên theo ca làm và lịch sử</p>
+  </div>
+  <div class="student">
+    <strong>Sinh viên:</strong> Lục Văn Kiên<br>
+    <strong>Mã số sinh viên:</strong> DTC245200474<br>
+    <strong>Lớp:</strong> CNTT-K23A<br>
+    <strong>Giảng viên hướng dẫn:</strong> Nguyễn Anh Chuyên
+  </div>
+  <div><p class="center">[[TỈNH/THÀNH PHỐ]] — 2026</p></div>
+  <span class="page-no">1</span>
+</section>
+
+<section class="page">
+  <h2>1. Tóm tắt và mục tiêu</h2>
+  <p>Đồ án triển khai một website điểm danh nhân viên theo ca làm, sử dụng PHP 8.3, MySQL 8.4 và Docker Compose. Người dùng đăng nhập, ghi nhận giờ vào/ra và xem lịch sử cá nhân. Hệ thống có phpMyAdmin để quản trị dữ liệu, Nginx làm reverse proxy, Prometheus/Grafana để quan sát metrics và Loki/Promtail để tập trung log.</p>
+  <h3>Mục tiêu</h3>
+  <ol>
+    <li>Xây dựng luồng đăng nhập, quản lý ca mẫu, điểm danh vào/ra và truy vấn lịch sử.</li>
+    <li>Đóng gói dịch vụ bằng Docker Compose, giữ cấu hình và hướng dẫn trong repository.</li>
+    <li>Giám sát ứng dụng, MySQL, Nginx và container qua Prometheus và dashboard Grafana.</li>
+    <li>Tập trung log Nginx/PHP/Apache, thực hành truy vấn LogQL.</li>
+    <li>Áp dụng network isolation, non-root, least privilege, read-only filesystem và security headers.</li>
+  </ol>
+  <h3>Phạm vi và giả định</h3>
+  <p>Đây là bản minh họa học tập, phục vụ một nhóm nhỏ và một host Docker. Tài khoản quản trị ban đầu được tạo từ biến môi trường; đăng ký mở tắt mặc định. Ba ca mẫu được nạp khi MySQL tạo volume lần đầu. Múi giờ nghiệp vụ là Asia/Ho_Chi_Minh. Bản mẫu chưa thay thế quy trình nhân sự chính thức, chưa có phê duyệt nghỉ phép, chấm công đa địa điểm hoặc tích hợp máy chấm công.</p>
+  <h3>Công nghệ sử dụng</h3>
+  <p>PHP/PDO, MySQL, phpMyAdmin, Apache trong container ứng dụng, Nginx, Prometheus, Grafana, Loki, Promtail và cAdvisor cùng các exporter cho MySQL/Nginx.</p>
+  <span class="page-no">2</span>
+</section>
+
+<section class="page">
+  <h2>2. Kiến trúc hệ thống</h2>
+  <p>Người dùng truy cập cổng Nginx trên loopback của máy host. Nginx chuyển request đến ứng dụng PHP. Ứng dụng sử dụng MySQL trong mạng backend. phpMyAdmin kết nối cùng database nhưng chỉ được publish vào loopback. Prometheus đọc metrics trong mạng monitoring; Grafana truy vấn Prometheus và Loki. Promtail đọc log từ volume dùng chung với ứng dụng/Nginx rồi đẩy đến Loki.</p>
+  <div class="diagram">
+    <div class="box">Trình duyệt<br>localhost:18270</div><div class="flow">→</div><div class="box">Nginx<br>reverse proxy</div>
+    <div class="box">phpMyAdmin<br>localhost:18271</div><div class="flow">→</div><div class="box">MySQL 8.4<br>database nội bộ</div>
+    <div class="box">Ứng dụng PHP<br>port nội bộ 8080</div><div class="flow">→</div><div class="box">MySQL<br>attendance</div>
+    <div class="box">Prometheus<br>localhost:19027</div><div class="flow">→</div><div class="box">Exporters + cAdvisor</div>
+    <div class="box">Promtail</div><div class="flow">→</div><div class="box">Loki → Grafana<br>localhost:13027</div>
+  </div>
+  <h3>Phân vùng mạng</h3>
+  <p>Mạng frontend phục vụ các cổng loopback. Mạng backend nội bộ dành cho ứng dụng, MySQL, phpMyAdmin và MySQL exporter. Mạng monitoring nội bộ kết nối Prometheus, Grafana, Loki, Promtail, cAdvisor, các exporter và endpoint metrics của ứng dụng. MySQL không publish cổng ra host; Loki cũng không publish trực tiếp.</p>
+  <h3>Lưu trữ</h3>
+  <p>MySQL, Grafana, Prometheus, Loki, vị trí Promtail và log ứng dụng dùng named volume riêng. Cấu hình được mount read-only khi phù hợp. File .env chứa secrets cục bộ, được loại khỏi Git.</p>
+  <span class="page-no">3</span>
+</section>
+
+<section class="page">
+  <h2>3. Ứng dụng điểm danh</h2>
+  <h3>Quy trình sử dụng</h3>
+  <ol>
+    <li>Đăng nhập bằng tài khoản quản trị hoặc tài khoản nhân viên đã được cấp.</li>
+    <li>Chọn một ca trong danh sách ca hôm nay và ghi nhận giờ vào.</li>
+    <li>Sau khi đã vào ca, ghi nhận giờ ra; một ca/ngày chỉ tạo một lượt.</li>
+    <li>Xem lịch sử cá nhân, gồm ngày, ca, giờ vào và giờ ra.</li>
+  </ol>
+  <p>Các thao tác thay đổi dùng POST và token CSRF. Session ID được đổi sau đăng nhập/đăng ký; cookie HttpOnly và SameSite Strict. Mật khẩu băm bằng password_hash, truy vấn database dùng prepared statement và dữ liệu hiển thị được escape HTML. Đăng ký tạo tài khoản tắt mặc định; khi cần dùng demo, bật tạm thời trong .env rồi tắt lại.</p>
+  <div class="figure"><img src="screenshots/01-attendance-login.png" alt="Giao diện đăng nhập điểm danh"><div class="caption">Hình 1. Giao diện đăng nhập của website điểm danh.</div></div>
+  <h3>Trạng thái và dữ liệu</h3>
+  <p>Ca làm mẫu gồm sáng, chiều và tối. Ứng dụng chỉ hiển thị lịch sử của người đang đăng nhập, giới hạn 100 bản ghi gần nhất. Database đặt unique key trên nhân viên, ca và ngày để chống tạo trùng kể cả khi có request đồng thời.</p>
+  <span class="page-no">4</span>
+</section>
+
+<section class="page">
+  <h2>4. Thiết kế cơ sở dữ liệu</h2>
+  <table>
+    <thead><tr><th>Bảng</th><th>Trường chính</th><th>Vai trò</th></tr></thead>
+    <tbody>
+      <tr><td>employees</td><td>id, name, email, password_hash, created_at</td><td>Tài khoản nhân viên và thông tin đăng nhập.</td></tr>
+      <tr><td>shifts</td><td>id, name, start_time, end_time</td><td>Danh mục ca làm.</td></tr>
+      <tr><td>attendance</td><td>employee_id, shift_id, attendance_date, checked_in_at, checked_out_at</td><td>Bản ghi vào/ra theo nhân viên, ca và ngày.</td></tr>
+    </tbody>
+  </table>
+  <p>Toàn bộ bảng dùng InnoDB và utf8mb4. Email nhân viên duy nhất; attendance có khóa ngoại đến employees và shifts, unique key theo nhân viên/ca/ngày, cùng index trên ngày. Xóa nhân viên có thể xóa dữ liệu liên quan; xóa ca có bản ghi tham chiếu bị ngăn để giữ toàn vẹn dữ liệu.</p>
+  <h3>Khởi tạo và quyền database</h3>
+  <p>database/init.sql chạy khi volume MySQL mới được tạo. Tài khoản ứng dụng chỉ có quyền trên database attendance. Tài khoản metrics riêng chỉ nhận các quyền SELECT, PROCESS và REPLICATION CLIENT cần thiết cho MySQL exporter. phpMyAdmin là giao diện quản trị, không dùng làm database backend của ứng dụng.</p>
+  <div class="figure"><img src="screenshots/02-phpmyadmin-login.png" alt="Giao diện phpMyAdmin"><div class="caption">Hình 2. phpMyAdmin được publish giới hạn trên loopback host.</div></div>
+  <p><strong>Lưu ý vận hành:</strong> sửa init.sql không tự áp dụng cho volume hiện hữu. Thay đổi schema cần migration có kiểm soát; không xóa volume dữ liệu để chạy lại init trong môi trường cần giữ dữ liệu.</p>
+  <span class="page-no">5</span>
+</section>
+
+<section class="page">
+  <h2>5. Nginx reverse proxy và bảo vệ HTTP</h2>
+  <p>Nginx lắng nghe cổng 8080 trong container, publish ra host tại <code>127.0.0.1:18270</code> và reverse proxy request đến dịch vụ app. Cổng phpMyAdmin 18271, Prometheus 19027 và Grafana 13027 cũng chỉ bind vào loopback. Dải cổng riêng tránh xung đột với dịch vụ đã chạy trên host.</p>
+  <h3>Kiểm soát request và response</h3>
+  <ul>
+    <li>Giới hạn request body và áp dụng rate limit cho route web.</li>
+    <li>Ẩn phiên bản server, không cho index thư mục và ẩn header X-Powered-By.</li>
+    <li>Thêm X-Content-Type-Options, X-Frame-Options và Referrer-Policy.</li>
+    <li>Endpoint trạng thái Nginx và metrics ứng dụng chỉ dành cho network monitoring.</li>
+    <li>HTTPS chưa bật trong cấu hình mẫu; Nginx cung cấp security headers cơ bản. Nếu demo Internet, cần TLS và bật APP_COOKIE_SECURE=1 sau TLS termination.</li>
+  </ul>
+  <h3>Kiểm chứng</h3>
+  <p>Đã gọi website qua cổng Nginx và nhận HTTP 200. Response có các security headers yêu cầu; header Server chỉ báo Nginx, không lộ phiên bản. Nginx chạy UID 33, filesystem read-only và không giữ Linux capabilities.</p>
+  <pre>http://localhost:18270/       Website
+http://localhost:18271/       phpMyAdmin
+http://localhost:19027/       Prometheus
+http://localhost:13027/       Grafana</pre>
+  <span class="page-no">6</span>
+</section>
+
+<section class="page">
+  <h2>6. Prometheus và Grafana</h2>
+  <p>Prometheus scrape mỗi 15 giây. Năm job theo dõi endpoint metrics ứng dụng, Loki, MySQL exporter, Nginx exporter và cAdvisor. Metrics ứng dụng gồm tổng số bản ghi và số bản ghi theo ngày. MySQL exporter dùng tài khoản giám sát riêng. Nginx exporter đọc stub_status chỉ trên mạng monitoring. cAdvisor thu thập tài nguyên container qua các mount chỉ đọc.</p>
+  <h3>Dashboard</h3>
+  <p>Grafana tự nạp dashboard “Attendance - Operations” với sáu panel: trạng thái scrape target, bản ghi điểm danh hôm nay, kết nối hoạt động Nginx, thread MySQL, working set memory container và log gần đây từ Loki. Hai datasource Prometheus/Loki được provision tự động.</p>
+  <div class="figure"><img src="screenshots/03-prometheus-targets.png" alt="Prometheus target health"><div class="caption">Hình 3. Prometheus thu thập metrics từ ứng dụng; các job exporter được cấu hình cùng hệ thống.</div></div>
+  <p>Kiểm tra runtime ghi nhận các job attendance, containers, Loki, MySQL và Nginx ở trạng thái up. Các chỉ số attendance_records_total, attendance_records_today, mysql_up, nginx_connections_active và container_memory_working_set_bytes đều có sample.</p>
+  <span class="page-no">7</span>
+</section>
+
+<section class="page">
+  <h2>7. Loki, Promtail và LogQL</h2>
+  <p>Nginx ghi access log dạng JSON và error log vào volume app-logs. Apache/PHP ghi error log vào cùng volume. Promtail mount volume read-only, gắn nhãn job, parse trường status từ JSON và chuyển log đến Loki qua mạng monitoring. Grafana dùng datasource Loki để truy vấn.</p>
+  <h3>Truy vấn LogQL minh họa</h3>
+  <pre># Toàn bộ access log Nginx
+{job="attendance-nginx"}
+
+# Request GET trang chủ
+{job="attendance-nginx"} |= "GET / "
+
+# Chỉ request có HTTP status 500
+{job="attendance-nginx",status="500"}
+
+# Log lỗi PHP
+{job="attendance-php"}</pre>
+  <p>Ba truy vấn đầu đã chạy qua API query_range của Loki; các truy vấn log Nginx trả về stream. Truy vấn status 500 có thể trả kết quả rỗng nếu chưa phát sinh lỗi 500, điều đó là hợp lệ. Khi demo, mở Grafana → Explore → Loki và chọn khoảng thời gian có request gần đây.</p>
+  <h3>Giới hạn lưu trữ</h3>
+  <p>Loki dùng filesystem storage trong volume và retention 168 giờ cho bản demo. Với môi trường thật cần backup, giám sát dung lượng, xác thực truy cập và object storage phù hợp. Log không ghi mật khẩu hoặc token.</p>
+  <div class="figure"><img src="screenshots/04-grafana-login.png" alt="Trang đăng nhập Grafana"><div class="caption">Hình 4. Grafana được bảo vệ đăng nhập; dashboard có datasource Prometheus và Loki.</div></div>
+  <span class="page-no">8</span>
+</section>
+
+<section class="page">
+  <h2>8. Hardening và network isolation</h2>
+  <table>
+    <thead><tr><th>Biện pháp</th><th>Cách áp dụng</th><th>Cách kiểm tra</th></tr></thead>
+    <tbody>
+      <tr><td>Non-root</td><td>App và Nginx chạy UID/GID 33.</td><td>docker compose exec app/nginx id.</td></tr>
+      <tr><td>Network isolation</td><td>Backend và monitoring là internal; service chỉ tham gia network cần thiết.</td><td>Kiểm tra networks trong Compose.</td></tr>
+      <tr><td>Hạn chế cổng</td><td>MySQL/Loki không publish; các UI chỉ bind 127.0.0.1.</td><td>docker compose ps và kiểm tra port binding.</td></tr>
+      <tr><td>Least privilege</td><td>Tài khoản app giới hạn vào attendance; metrics account chỉ có quyền đọc/giám sát.</td><td>Kiểm tra grants MySQL.</td></tr>
+      <tr><td>Container hardening</td><td>App/Nginx read-only filesystem, cap_drop ALL, no-new-privileges.</td><td>Kiểm tra Compose và trạng thái container.</td></tr>
+      <tr><td>Web/session</td><td>Prepared statements, password hashing, CSRF, HttpOnly/SameSite, security headers.</td><td>Kiểm tra source, response headers và luồng form.</td></tr>
+      <tr><td>Secrets</td><td>Mật khẩu ngẫu nhiên ở .env, .env bị ignore khỏi Git.</td><td>Kiểm tra .gitignore, không commit file .env.</td></tr>
+    </tbody>
+  </table>
+  <p>cAdvisor cần đọc metadata runtime của Docker để cung cấp metrics container; các mount được đặt read-only và endpoint không publish ra host. Không mở giao diện quản trị ra Internet. Các secrets trong file .env là phục vụ demo cục bộ và phải được thay/luân chuyển trước khi triển khai thật.</p>
+  <span class="page-no">9</span>
+</section>
+
+<section class="page">
+  <h2>9. Kiểm thử, vận hành và kết luận</h2>
+  <h3>Kết quả kiểm thử runtime</h3>
+  <ul>
+    <li>Compose config hợp lệ; các dịch vụ chính ở trạng thái Up, MySQL healthy.</li>
+    <li>HTTP 200 tại website, phpMyAdmin, Prometheus và health API Grafana.</li>
+    <li>Luồng kiểm thử đăng nhập quản trị, check-in, check-out và xem lịch sử hoạt động; dữ liệu hiện diện trong MySQL.</li>
+    <li>App và Nginx chạy bằng UID 33; Nginx trả security headers.</li>
+    <li>Năm Prometheus jobs có trạng thái up; metrics ứng dụng, database, proxy và container có sample.</li>
+    <li>Grafana provision hai datasource và dashboard sáu panel; các ví dụ LogQL chạy thành công.</li>
+  </ul>
+  <h3>Khởi động demo</h3>
+  <pre>Copy-Item .env.example .env
+# Đặt các mật khẩu ngẫu nhiên riêng biệt trong .env
+docker compose up -d --build
+docker compose ps</pre>
+  <p>Tài khoản admin: giá trị APP_ADMIN_EMAIL/APP_ADMIN_PASSWORD trong .env. Grafana: GRAFANA_ADMIN_USER/GRAFANA_ADMIN_PASSWORD. Không đưa các giá trị này vào ảnh chụp công khai hoặc repository.</p>
+  <h3>Kết luận và hướng phát triển</h3>
+  <p>Đồ án kết hợp nghiệp vụ điểm danh với vận hành container, observability, logging và hardening cơ bản. Hướng phát triển gồm quản lý nhân viên/ca qua giao diện admin, migration schema, phân quyền chi tiết, kiểm thử tự động, TLS, backup/restore, cảnh báo Prometheus và chính sách retention theo môi trường.</p>
+  <p><strong>Thông tin repository GitHub:</strong> Chưa tạo; bổ sung URL sau khi xuất bản repository.<br><strong>Commit 1:</strong> Nginx reverse proxy/ứng dụng · <strong>Commit 2:</strong> Prometheus/Grafana · <strong>Commit 3:</strong> Loki/Promtail</p>
+  <p class="muted"><strong>Hoàn thiện trước khi nộp:</strong> bổ sung tên học phần, tỉnh/thành phố, ảnh dashboard Grafana sau khi đăng nhập, URL repository và mã commit thật.</p>
+  <span class="page-no">10</span>
+</section>
+</body>
+</html>
