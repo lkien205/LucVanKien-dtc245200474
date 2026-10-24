@@ -1,6 +1,6 @@
-# Hệ thống điểm danh nhân viên
+# Hệ thống điểm danh lớp học
 
-Ứng dụng PHP 8.3 + MySQL 8.4, chạy bằng Docker Compose. Nhân viên có thể tạo tài khoản, đăng nhập, chọn ca, ghi nhận giờ vào/ra và xem tối đa 100 lượt điểm danh gần nhất. Prometheus/Grafana theo dõi ứng dụng, MySQL, Nginx và container; Loki/Promtail tập trung log. Múi giờ ứng dụng là `Asia/Ho_Chi_Minh`.
+Ứng dụng PHP 8.3 + MySQL 8.4, chạy bằng Docker Compose. Quản trị viên quản lý sinh viên, môn học và lịch buổi học; sinh viên đăng nhập để điểm danh theo lớp và xem lịch sử. Prometheus/Grafana theo dõi ứng dụng, MySQL, Nginx và container; Loki/Promtail tập trung log. Múi giờ ứng dụng là `Asia/Ho_Chi_Minh`.
 
 ## Khởi chạy
 
@@ -15,13 +15,13 @@ phpMyAdmin ở `http://localhost:18271`, Prometheus ở `http://localhost:19027`
 
 ## Tính năng và quy tắc
 
-- Ba ca mẫu được nạp lần đầu: sáng, chiều, tối. Có thể sửa/dùng thêm ca qua phpMyAdmin.
+- Quản trị viên đăng nhập bằng tài khoản `APP_ADMIN_*`, tạo tài khoản sinh viên, gán lớp, quản lý môn học và lên lịch buổi học.
+- Sinh viên chỉ thấy lịch của lớp mình; chỉ điểm danh được trong ngày diễn ra buổi học. Hệ thống tự đánh dấu đi trễ sau số phút cho phép.
+- Danh sách buổi học và lịch sử điểm danh được giới hạn để dễ theo dõi; mỗi sinh viên chỉ điểm danh một lần cho mỗi buổi.
 - MySQL seed và kết nối ứng dụng dùng `utf8mb4` để lưu/hiển thị tên tiếng Việt chính xác.
-- Mỗi nhân viên chỉ có một bản ghi cho mỗi ca/ngày. Cơ sở dữ liệu chặn điểm danh trùng; chỉ có thể điểm danh ra sau khi điểm danh vào.
-- Lịch sử chỉ hiển thị dữ liệu của tài khoản đang đăng nhập.
-- Đăng ký yêu cầu email hợp lệ và mật khẩu tối thiểu 12 ký tự.
-- Tài khoản đầu tiên được tạo là tài khoản quản trị; mỗi lần khởi động ứng dụng, thông tin tài khoản này được đồng bộ theo các biến `APP_ADMIN_*`. Tài khoản nhân viên đăng ký sau đó không bị thay đổi.
-- Đăng ký tài khoản tắt mặc định (`APP_SIGNUP_ENABLED=false`). Bật tạm thời trong `.env` để nhân viên tạo tài khoản, sau đó tắt lại.
+- Tài khoản sinh viên được tạo bởi quản trị viên, mật khẩu tối thiểu 12 ký tự.
+- Tài khoản đầu tiên được tạo là tài khoản quản trị; mỗi lần khởi động ứng dụng, thông tin tài khoản này được đồng bộ theo các biến `APP_ADMIN_*`. Tài khoản sinh viên tạo sau đó không bị thay đổi.
+- Khi khởi động, ứng dụng tự áp dụng migration bổ sung dữ liệu lớp học và giữ nguyên bảng/dữ liệu điểm danh nhân viên cũ.
 
 ## Quan sát hệ thống
 
